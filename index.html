@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>TOP SECRET — Halloween Cyber Escape Room</title>
+  <style>
+    :root{
+      --bg:#0b0f12;
+      --panel:#0f1720;
+      --ink:#c7f9cc;
+      --muted:#8b9aa3;
+      --accent:#ff8a00;
+      --danger:#ff3344;
+      --stamp:rgba(255,138,0,0.12);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", monospace;
+    }
+    html,body{height:100%;margin:0;background:linear-gradient(180deg,#071018 0%,var(--bg) 100%);color:var(--ink);}
+    .container{max-width:980px;margin:32px auto;padding:28px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));box-shadow:0 8px 40px rgba(2,6,23,0.6);border-radius:10px;position:relative;overflow:hidden;}
+    header{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:20px;}
+    .title{display:flex;flex-direction:column;}
+    .title h1{margin:0;font-size:20px;letter-spacing:0.6px;}
+    .meta{font-size:12px;color:var(--muted);margin-top:6px;}
+    .stamp{background:linear-gradient(90deg,rgba(255,138,0,0.14),transparent);border:2px solid rgba(255,138,0,0.12);color:var(--accent);padding:8px 12px;border-radius:6px;font-weight:700;letter-spacing:1px;box-shadow:0 6px 24px var(--stamp);}
+    .panel{display:grid;grid-template-columns:1fr 320px;gap:20px;}
+    .chat{background:linear-gradient(180deg,#071017 40%,#0b1420 100%);padding:18px;border-radius:8px;min-height:420px;max-height:72vh;overflow:auto;border:1px solid rgba(255,255,255,0.02);}
+  /* suspicious words are visually identical to surrounding text (secret) */
+  .suspicious{color:inherit;text-decoration:none;cursor:inherit;}
+  .hidden-log{display:none;padding:10px;margin-top:8px;border-left:3px solid var(--accent);background:linear-gradient(90deg,rgba(255,138,0,0.03),transparent);border-radius:4px;color:var(--muted);}
+  .hidden-log.revealed{display:block;color:var(--ink);}
+  /* hide small hint lines inside chat messages (clues under chat entries) */
+  .chat .hint{display:none}
+    .chat .msg{display:flex;gap:12px;padding:10px;border-radius:6px;margin-bottom:8px;align-items:flex-start;}
+    .avatar{width:44px;height:44px;border-radius:6px;flex:0 0 44px;background:linear-gradient(135deg,#081923,#12202a);display:flex;align-items:center;justify-content:center;color:var(--accent);font-weight:700;border:1px solid rgba(255,255,255,0.02);}
+    .bubble{flex:1;}
+    .meta-info{font-size:12px;color:var(--muted);margin-bottom:6px;}
+    .text{background:linear-gradient(180deg,rgba(255,255,255,0.01),transparent);padding:10px;border-radius:6px;border:1px dashed rgba(255,255,255,0.02);color:var(--ink);white-space:pre-wrap;}
+    .hint{color:var(--muted);font-size:13px;margin-top:8px;}
+    .controls{background:linear-gradient(180deg,#081018,#0b141b);padding:16px;border-radius:8px;border:1px solid rgba(255,255,255,0.02);min-height:420px;}
+    .controls h2{margin:0 0 12px 0;font-size:16px;}
+    button.reveal{background:transparent;color:var(--accent);border:1px solid rgba(255,138,0,0.12);padding:8px 10px;border-radius:6px;cursor:pointer;font-weight:700;}
+    button.reveal:disabled{opacity:0.45;cursor:not-allowed;}
+    .flag{margin-top:12px;padding:10px;background:linear-gradient(90deg,rgba(255,138,0,0.06),transparent);border-left:4px solid var(--accent);border-radius:6px;word-break:break-all;}
+    .flag label{font-size:12px;color:var(--muted);display:block;margin-bottom:6px;}
+    .notice{margin-top:14px;font-size:13px;color:var(--muted);}
+    .top-strip{position:absolute;left:-40px;top:40px;color:rgba(255,138,0,0.06);font-size:120px;font-weight:900;transform:rotate(-12deg);pointer-events:none;user-select:none;}
+    footer{margin-top:18px;font-size:12px;color:var(--muted);display:flex;justify-content:space-between;align-items:center;}
+    .copy-ok{display:inline-block;color:#6fe081;font-weight:700;margin-left:8px;font-size:12px;}
+  /* Celebration overlay and confetti */
+  .celebration{position:absolute;inset:0;display:none;align-items:center;justify-content:center;pointer-events:none}
+  .celebration.show{display:flex}
+  .celebration .badge{background:linear-gradient(90deg,#143b1f,#2fa36f);color:#04210b;padding:18px 26px;border-radius:10px;font-weight:900;box-shadow:0 10px 40px rgba(2,6,23,0.6);transform:scale(0.88);animation:badgePop 520ms cubic-bezier(.2,.9,.2,1) forwards}
+  @keyframes badgePop{to{transform:scale(1);}}
+  .confetti{position:absolute;width:10px;height:14px;opacity:0.95;border-radius:2px}
+  @keyframes confettiFall{0%{transform:translateY(-10vh) rotate(0deg)}100%{transform:translateY(120vh) rotate(720deg)}}
+    @media (max-width:880px){.panel{grid-template-columns:1fr;}.top-strip{display:none;}}
+  </style>
+</head>
+<body>
+  <div class="container" role="main" aria-labelledby="page-title">
+    <div class="top-strip">TOP SECRET</div>
+    <header>
+      <div class="title">
+        <h1 id="page-title">CLASSIFIED — HALLOWEEN OPS: CYBER ESCAPE ROOM</h1>
+        <div class="meta">Scenario: Compromise recovery drills | Lead: Morgan / Rivera | Clearance: Orange</div>
+        <div class="subtle-hint" style="font-size:12px;color:var(--muted);opacity:0.7;margin-top:6px;font-style:italic;">Subtle tip: some words in the log are interactive — try interacting with the text.</div>
+      </div>
+      <div class="stamp" aria-hidden="true">TOP SECRET</div>
+    </header>
+
+    <section class="panel">
+      <section class="chat" aria-live="polite" aria-label="Secure chat log">
+        <div class="msg" data-id="m1">
+          <div class="avatar" aria-hidden="true">M</div>
+          <div class="bubble">
+            <div class="meta-info">Morgan — Operator • 2025-10-31 21:07</div>
+          <div class="text">Secured entry. First cipher points at "pumpkin nodes" — saw carved hex pairs around 03:13. Keep comms tight; don't share raw dumps publicly.</div>
+          </div>
+        </div>
+
+        <div class="msg" data-id="m2">
+          <div class="avatar">R</div>
+          <div class="bubble">
+            <div class="meta-info">Rivera — Analyst • 2025-10-31 21:09</div>
+            <div class="text">Pulled a small snippet marked "<span class="suspicious" data-log="log-jack">jack-o-0x7</span>" — assembly comment shows ";FLAG ~ pumpkin_byte_01". Sending the dump over.</div>
+          </div>
+        </div>
+
+        <div class="msg" data-id="m3">
+          <div class="avatar">G</div>
+          <div class="bubble">
+            <div class="meta-info">Ghost — Recon • 2025-10-31 21:14</div>
+            <div class="text">Sensor tripped. Ledger entry: "When candy meets code, the secret's in <span class="suspicious" data-log="log-braces">braces</span>." Probably FLAG-style. Pushing forensics notes.</div>
+          </div>
+        </div>
+
+        <div class="msg" data-id="m4">
+          <div class="avatar">N</div>
+          <div class="bubble">
+            <div class="meta-info">Node — Specialist • 2025-10-31 21:21</div>
+            <div class="text">Found an XOR mask on "boo.bin" — key looks like <span class="suspicious" data-log="log-xor">0x5A</span>. Dump only; don't execute unknown payloads.</div>
+          </div>
+        </div>
+
+        <!-- Hidden secret logs revealed by clicking suspicious words -->
+        <div id="log-jack" class="hidden-log" aria-hidden="true">
+          Diagnostic dump (hidden): Found a labelled USB packet referencing "Diagnostics_Rev2". Extracted token: <span class="secret-flag" data-flag="FLAG{diag_rev2_2025}">[hidden]</span>
+        </div>
+
+        <div id="log-braces" class="hidden-log" aria-hidden="true">
+          Ledger footnote: the riddle points to a styling token wrapped in braces. Inspecting the ledger yields: <span class="secret-flag" data-flag="FLAG{braces_trick_2025}">[hidden]</span>
+        </div>
+
+        <div id="log-xor" class="hidden-log" aria-hidden="true">
+          XOR analysis: found a note 'mask=0x5A' next to a short hex-run. Decoding produced: <span class="secret-flag" data-flag="FLAG{xor_mask_5A}">[hidden]</span>
+        </div>
+      </section>
+
+      <aside class="controls" aria-label="Flag verifier">
+        <h2>Verifier</h2>
+        <p class="hint">Use the chat to discover hidden logs. Paste the three secret flags into the verifier below to complete the exercise.</p>
+
+        <!-- Verification area: paste the three secret flags here -->
+        <div style="margin-top:12px;padding:10px;border-radius:6px;background:linear-gradient(180deg,rgba(255,255,255,0.01),transparent);">
+          <div style="font-weight:700;color:var(--muted)">Final Verification</div>
+          <div style="margin-top:8px;color:var(--muted);font-size:13px;">Paste the three secret flags you found (any order). The verifier will confirm completion.</div>
+          <textarea id="final-input" placeholder="Paste flags here (e.g. FLAG{...})" style="width:100%;height:120px;margin-top:8px;padding:8px;border-radius:6px;border:1px solid rgba(255,255,255,0.03);background:transparent;color:var(--ink);"></textarea>
+          <div style="display:flex;gap:8px;align-items:center;margin-top:8px;">
+            <button id="final-verify" class="reveal">Verify</button>
+            <div id="final-result" style="color:var(--muted);font-weight:700"></div>
+          </div>
+        </div>
+
+        <p class="notice" id="status">Status: Awaiting operator actions.</p>
+      </aside>
+    </section>
+
+    <footer>
+      <div>Exercise: Halloween Capture • Non-production training artifact</div>
+      <div style="color:var(--muted)">Document ID: HE-2025-10-31</div>
+    </footer>
+    <!-- Celebration overlay (hidden until verification success) -->
+    <div id="celebration" class="celebration" aria-hidden="true">
+      <div class="badge">VERIFIED ◒</div>
+    </div>
+  </div>
+
+  <script>
+    // Enhanced script: preserves reveal/copy behavior and adds a forensic terminal
+    (function(){
+  'use strict';
+  const status = document.getElementById('status');
+  // capturedLog remains to list revealed flags
+  const capturedLog = document.getElementById('captured-log');
+
+      function setStatus(msg){ if(status) status.textContent = 'Status: ' + msg; }
+
+      async function copyText(text){
+        if(navigator.clipboard && navigator.clipboard.writeText){
+          try{ await navigator.clipboard.writeText(text); return true; }catch(e){ /* fallback */ }
+        }
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed'; ta.style.left = '-9999px';
+        document.body.appendChild(ta); ta.select();
+        try{ document.execCommand('copy'); document.body.removeChild(ta); return true; }
+        catch(e){ document.body.removeChild(ta); return false; }
+      }
+
+      // For this simplified mode we removed terminal commands and direct buttons.
+      // Keep minimal helper functions to reveal and copy flags when hidden logs are discovered.
+
+      async function revealFlag(flag, sourceId){
+        // append to captured log
+        if(capturedLog){
+          if(capturedLog.textContent.trim() === '(none)') capturedLog.textContent = '';
+          // avoid duplicates
+          const existing = (capturedLog.textContent || '').split('\n').map(s=>s.trim()).filter(Boolean);
+          if(!existing.includes(flag)){
+            capturedLog.textContent += (capturedLog.textContent ? '\n' : '') + flag;
+            capturedLog.scrollTop = capturedLog.scrollHeight;
+          }
+        }
+        const copied = await copyText(flag);
+        if(copied) setStatus('Flag captured: ' + flag);
+        else setStatus('Flag revealed (copy failed) for ' + (sourceId||'locked'));
+      }
+
+      // Suspicious-word click handlers: reveal hidden logs with flags
+      function attachSuspiciousHandlers(){
+        const suspects = Array.from(document.querySelectorAll('.suspicious'));
+        suspects.forEach(el=>{
+          el.addEventListener('click', async function(){
+            const logId = this.getAttribute('data-log');
+            const log = document.getElementById(logId);
+            if(!log) return;
+            if(!log.classList.contains('revealed')){
+              log.classList.add('revealed');
+              log.setAttribute('aria-hidden','false');
+              setStatus('Secret log revealed: ' + logId);
+              // find embedded flag element
+              const secret = log.querySelector('.secret-flag');
+              if(secret){
+                const flag = secret.getAttribute('data-flag') || secret.textContent || '';
+                // replace placeholder with real flag
+                secret.textContent = flag;
+                // add to captured log and copy
+                await revealFlag(flag, logId);
+              }
+            } else {
+              setStatus('Secret log already revealed: ' + logId);
+            }
+          });
+        });
+      }
+
+      // Attach handlers immediately (chat exists at load-time)
+      attachSuspiciousHandlers();
+
+      // Final verification: check pasted flags against required set
+      const finalBtn = document.getElementById('final-verify');
+      const finalInput = document.getElementById('final-input');
+      const finalResult = document.getElementById('final-result');
+      // required secret flags (the three hidden logs)
+      const requiredSecrets = new Set(['FLAG{diag_rev2_2025}','FLAG{braces_trick_2025}','FLAG{xor_mask_5A}']);
+
+      function extractFlags(text){
+        const re = /FLAG\{[^}]+\}/g;
+        const found = text.match(re) || [];
+        return Array.from(new Set(found)); // unique
+      }
+
+      function verifyFinal(){
+        const input = (finalInput && finalInput.value) ? finalInput.value : '';
+        const found = extractFlags(input);
+        const foundSet = new Set(found);
+        let missing = [];
+        for(const r of requiredSecrets){ if(!foundSet.has(r)) missing.push(r); }
+        if(missing.length === 0){
+          finalResult.style.color = '#6fe081';
+          finalResult.textContent = 'VERIFIED — All secret flags present. Exercise complete.';
+          setStatus('Operator: final verification success');
+          // append confirmation to captured log
+          if(capturedLog){ capturedLog.textContent += (capturedLog.textContent.trim() ? '\n' : '') + 'VERIFIED: all secret flags'; capturedLog.scrollTop = capturedLog.scrollHeight; }
+          finalBtn.disabled = true; finalInput.disabled = true;
+            // play celebration animation
+            try{ if(window.showCelebration) window.showCelebration(); }catch(e){}
+        } else {
+          finalResult.style.color = 'var(--danger)';
+          finalResult.textContent = 'Missing: ' + missing.join(', ');
+          setStatus('Operator: final verification failed — missing flags');
+        }
+      }
+
+      if(finalBtn) finalBtn.addEventListener('click', verifyFinal);
+      if(finalInput) finalInput.addEventListener('keydown', function(e){ if(e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { verifyFinal(); } });
+
+      // Celebration: create confetti and show badge
+      window.showCelebration = function(){
+        const overlay = document.getElementById('celebration');
+        if(!overlay) return;
+        overlay.setAttribute('aria-hidden','false');
+        overlay.classList.add('show');
+        // create confetti pieces
+        const colors = ['#FF6B6B','#FFD93D','#6BCB77','#4D96FF','#A78BFA'];
+        const pieces = 22;
+        for(let i=0;i<pieces;i++){
+          const c = document.createElement('div');
+          c.className = 'confetti';
+          const w = 8 + Math.round(Math.random()*8);
+          c.style.width = w + 'px'; c.style.height = Math.round(w*1.2) + 'px';
+          c.style.background = colors[Math.floor(Math.random()*colors.length)];
+          c.style.left = Math.round(Math.random()*100) + 'vw';
+          c.style.top = Math.round(-20 - Math.random()*20) + 'vh';
+          c.style.transform = 'translateY(-10vh) rotate(' + Math.round(Math.random()*360) + 'deg)';
+          c.style.animation = 'confettiFall ' + (2200 + Math.round(Math.random()*1800)) + 'ms cubic-bezier(.2,.7,.2,1) forwards';
+          c.style.opacity = (0.8 + Math.random()*0.2).toString();
+          overlay.appendChild(c);
+        }
+        // hide after 4s and clear confetti
+        setTimeout(()=>{
+          overlay.classList.remove('show');
+          overlay.setAttribute('aria-hidden','true');
+          // remove confetti nodes
+          const nodes = Array.from(overlay.querySelectorAll('.confetti'));
+          nodes.forEach(n=>n.remove());
+        },4200);
+      };
+
+    })();
+  </script>
+</body>
+</html>
