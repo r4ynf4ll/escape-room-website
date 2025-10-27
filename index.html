@@ -171,7 +171,7 @@
       // Keep minimal helper functions to reveal and copy flags when hidden logs are discovered.
 
       async function revealFlag(flag, sourceId){
-        // append to captured log
+        // append to captured log (do not surface the flag value in status)
         if(capturedLog){
           if(capturedLog.textContent.trim() === '(none)') capturedLog.textContent = '';
           // avoid duplicates
@@ -182,8 +182,9 @@
           }
         }
         const copied = await copyText(flag);
-        if(copied) setStatus('Flag captured: ' + flag);
-        else setStatus('Flag revealed (copy failed) for ' + (sourceId||'locked'));
+        // Do not include the flag value in the status message
+        if(copied) setStatus('Flag captured.');
+        else setStatus('Flag revealed.');
       }
 
       // Suspicious-word click handlers: reveal hidden logs with flags
@@ -246,9 +247,10 @@
             // play celebration animation
             try{ if(window.showCelebration) window.showCelebration(); }catch(e){}
         } else {
+          // Do NOT reveal which flags are missing or display flag values.
           finalResult.style.color = 'var(--danger)';
-          finalResult.textContent = 'Missing: ' + missing.join(', ');
-          setStatus('Operator: final verification failed — missing flags');
+          finalResult.textContent = 'Verification failed — ' + missing.length + ' flag(s) missing.';
+          setStatus('Operator: final verification failed.');
         }
       }
 
