@@ -53,7 +53,64 @@
   @keyframes badgePop{to{transform:scale(1);}}
   .confetti{position:absolute;width:10px;height:14px;opacity:0.95;border-radius:2px}
   @keyframes confettiFall{0%{transform:translateY(-10vh) rotate(0deg)}100%{transform:translateY(120vh) rotate(720deg)}}
-    @media (max-width:880px){.panel{grid-template-columns:1fr;}.top-strip{display:none;}}
+    /* scary modal styles (added) */
+    .scary-modal{
+      position:fixed;
+      inset:0;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      z-index:9999;
+      background:linear-gradient(180deg, rgba(0,0,0,0.9), rgba(6,0,0,0.95));
+      pointer-events:auto;
+    }
+    .scary-modal.show{display:flex;}
+    .scary-box{
+      background:#050101;
+      color:#ff1a1a;
+      border:4px solid rgba(255,26,26,0.98);
+      padding:28px 36px;
+      font-size:48px;
+      line-height:1;
+      font-weight:900;
+      text-align:center;
+      text-transform:uppercase;
+      letter-spacing:2px;
+      box-shadow:0 0 60px rgba(255,26,26,0.18), inset 0 0 40px rgba(255,0,0,0.06);
+      transform:rotate(-2deg);
+      border-radius:8px;
+      max-width:90%;
+      animation:scary-flicker 1.2s infinite;
+    }
+    @keyframes scary-flicker{
+      0%{opacity:1; text-shadow: 0 0 0 #ff1a1a;}
+      10%{opacity:0.85; text-shadow: 0 0 16px #ff1a1a;}
+      30%{opacity:1; transform:rotate(-1deg) translateX(-2px);}
+      50%{opacity:0.7; text-shadow: 0 0 28px #ff4a4a;}
+      70%{opacity:1; transform:rotate(-3deg) translateX(2px);}
+      100%{opacity:1;}
+    }
+    /* small glitch slices */
+    .scary-box::before, .scary-box::after{
+      content:'DON\'T TRUST TAYLOR';
+      position:absolute;
+      left:50%;
+      transform:translateX(-50%);
+      pointer-events:none;
+      mix-blend-mode:screen;
+      opacity:0.06;
+    }
+    .scary-box::before{top:calc(50% - 2px); color:#ffffff; clip-path:polygon(0 0,100% 0,100% 45%,0 45%); animation:glitch-anim 1.1s infinite linear;}
+    .scary-box::after{top:calc(50% + 2px); color:#ff7a7a; clip-path:polygon(0 55%,100% 55%,100% 100%,0 100%); animation:glitch-anim 0.9s infinite linear reverse;}
+    @keyframes glitch-anim{
+      0%{transform:translateX(-50%) translateY(0);}
+      20%{transform:translateX(-48%) translateY(-2px);}
+      40%{transform:translateX(-52%) translateY(1px);}
+      60%{transform:translateX(-47%) translateY(-1px);}
+      80%{transform:translateX(-53%) translateY(2px);}
+      100%{transform:translateX(-50%) translateY(0);}
+    }
+
   </style>
 </head>
 <body>
@@ -143,6 +200,12 @@
     <div id="celebration" class="celebration" aria-hidden="true">
       <div class="badge">VERIFIED ◒</div>
     </div>
+
+    <!-- scary modal (hidden by default) -->
+    <div id="scary-modal" class="scary-modal" aria-hidden="true">
+      <div class="scary-box" role="dialog" aria-live="assertive" aria-label="Warning">DON'T TRUST TAYLOR</div>
+    </div>
+
   </div>
 
   <script>
@@ -287,7 +350,51 @@
           const nodes = Array.from(overlay.querySelectorAll('.confetti'));
           nodes.forEach(n=>n.remove());
         },4200);
+
+        // also trigger spooky message a short moment after celebration
+        setTimeout(()=>{ try{ showScaryBox(); }catch(e){/*ignore*/} }, 500);
       };
+
+      // show scary modal with a short ominous tone and vibration (if available)
+      function showScaryBox(){
+        const modal = document.getElementById('scary-modal');
+        if(!modal) return;
+        modal.setAttribute('aria-hidden','false');
+        modal.classList.add('show');
+
+        // play a short ominous tone using Web Audio API (graceful degrade)
+        try{
+          const AudioCtx = window.AudioContext || window.webkitAudioContext;
+          if(AudioCtx){
+            const ctx = new AudioCtx();
+            const o = ctx.createOscillator();
+            const g = ctx.createGain();
+            o.type = 'sawtooth';
+            o.frequency.value = 110; // low tone
+            g.gain.value = 0.0001;
+            o.connect(g); g.connect(ctx.destination);
+            o.start();
+            g.gain.exponentialRampToValueAtTime(0.12, ctx.currentTime + 0.02);
+            g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 2.2);
+            o.frequency.exponentialRampToValueAtTime(55, ctx.currentTime + 1.2);
+            o.stop(ctx.currentTime + 2.3);
+            // try close context after tone
+            setTimeout(()=>{ try{ ctx.close(); }catch(e){} }, 2600);
+          }
+        }catch(e){ /* ignore audio errors */ }
+
+        // attempt vibration pattern on supporting devices
+        if(navigator.vibrate){
+          try{ navigator.vibrate([200,100,200,100,300]); }catch(e){}
+        }
+
+        // keep the modal visible; allow click to dismiss once (but re-showing stays possible)
+        modal.addEventListener('click', function handler(){
+          modal.classList.remove('show');
+          modal.setAttribute('aria-hidden','true');
+          modal.removeEventListener('click', handler);
+        });
+      }
 
     })();
   </script>
